@@ -10,10 +10,8 @@ app.get('/api/health', (req, res) => {
 })
 
 
-// cacheGeral = { dados: undefined, expiraEm: undefined } // Cache contendo informacoes gerais de todos os mundos
-let cacheGeral = new Object() 
 
-// Cache contendo informacoes especificas dos mundos => Chave: nome do mundo -> valor: {dados, expiraEm}
+// Cache contendo os dados dos mundos, com tempo de vida de 5 minutos
 let cacheMundos = new Map() 
 
 
@@ -25,10 +23,12 @@ app.get('/api/health', (req, res) => {
 // Rota para pegar todos os mundos
 app.get('/api/worlds/', async (req, res) => {
 
+    const entrada = cacheMundos.get('worlds')
+
     // Checa se é válido pegar os dados da Cache ou não
-    if(cacheGeral.dados != undefined && Date.now() < cacheGeral.expiraEm) {
+    if(entrada != undefined && Date.now() < entrada.expiraEm){
         console.log('Pegando dados de Worlds pelo Cache')
-        res.json(cacheGeral)
+        res.json(entrada.dados)
         return
     }
 
@@ -37,7 +37,7 @@ app.get('/api/worlds/', async (req, res) => {
         const response = await fetch(`https://api.tibiadata.com/v4/worlds/`)
         const data = await response.json() // Transforma em json
         const dados = data.worlds
-        Object.assign(cacheGeral, { dados: dados, expiraEm: Date.now() + 5*60*1000})
+        cacheMundos.set('worlds', {dados: dados, expiraEm: Date.now() + 5*60*1000})
         console.log('Pegando dados de Worlds pela API')
         res.json(dados)
     }catch(error) {
