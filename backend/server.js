@@ -5,12 +5,6 @@ const app = express()
 const HOST = '0.0.0.0'
 const PORT = 3000
 
-app.get('/api/health', (req, res) => {
-    res.json({status: 'ok'})
-})
-
-
-
 // Cache contendo os dados dos mundos, com tempo de vida de 5 minutos
 let cacheMundos = new Map() 
 
@@ -21,7 +15,7 @@ app.get('/api/health', (req, res) => {
 })
 
 // Rota para pegar todos os mundos
-app.get('/api/worlds/', async (req, res) => {
+app.get('/api/worlds', async (req, res) => {
 
     const entrada = cacheMundos.get('worlds')
 
@@ -41,7 +35,8 @@ app.get('/api/worlds/', async (req, res) => {
         console.log('Pegando dados de Worlds pela API')
         res.json(dados)
     }catch(error) {
-        res.status(502).json({erro: `Falha ao buscar dados da TibiaData: ${error}`})
+        console.log(`Erro ao buscar dados da TibiaData: ${error}`)
+        res.status(502).json({erro: 'Falha ao buscar dados da TibiaData'})
     }
 })
 
@@ -75,6 +70,7 @@ app.get('/api/world/:nome', async (req, res) => {
         res.json(dados)
     }
     catch(error) {
+        console.log(`Erro ao buscar dados da TibiaData: ${error}`)
         res.status(502).json({erro: 'Falha ao buscar dados da TibiaData'})
     }
 
