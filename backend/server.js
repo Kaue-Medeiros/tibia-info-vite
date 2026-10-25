@@ -4,6 +4,7 @@ const app = express()
 // HOST 0.0.0.0 para ser ouvido pelo Nginx do frontend
 const HOST = '0.0.0.0'
 const PORT = 3000
+const TIBIADATA_API = 'https://api.tibiadata.com/v5'
 
 // Cache contendo os dados dos mundos, com tempo de vida de 5 minutos
 let cacheMundos = new Map() 
@@ -28,9 +29,18 @@ app.get('/api/worlds', async (req, res) => {
 
     // Pega os dados da API
     try {
-        const response = await fetch(`https://api.tibiadata.com/v4/worlds/`)
+        const response = await fetch(`${TIBIADATA_API}/worlds`)
         const data = await response.json() // Transforma em json
+        if (!response.ok) {
+            res.status(response.status).json(data)
+            return
+        }
+
         const dados = data.worlds
+        if (!dados || !Array.isArray(dados.regular_worlds)) {
+            throw new Error('Resposta inválida da TibiaData')
+        }
+
         cacheMundos.set('worlds', {dados: dados, expiraEm: Date.now() + 5*60*1000})
         console.log('Pegando dados de Worlds pela API')
         res.json(dados)
@@ -48,7 +58,7 @@ app.get('/api/world/:nome', async (req, res) => {
     const nomeRaw = req.params.nome.toLowerCase()
     const nome = nomeRaw[0].toUpperCase() + nomeRaw.slice(1)
 
-    const url = `https://api.tibiadata.com/v4/world/${nome}`
+    const url = `${TIBIADATA_API}/world/${encodeURIComponent(nome)}`
     const entrada = cacheMundos.get(nome)
     
 
@@ -63,7 +73,15 @@ app.get('/api/world/:nome', async (req, res) => {
     try{
         const response = await fetch(url) // Espera a resposta HTTP
         const data = await response.json() // Transforma em json
+        if (!response.ok) {
+            res.status(response.status).json(data)
+            return
+        }
+
         const dados = data.world
+        if (!dados || typeof dados.name !== 'string') {
+            throw new Error('Resposta inválida da TibiaData')
+        }
 
         cacheMundos.set(nome, { dados: dados, expiraEm: Date.now() + 5*60*1000 })
         console.log(`Dados do mundo ${nome} pegos da API!`)
